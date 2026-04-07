@@ -2,20 +2,27 @@ import {
   Badge,
   Box,
   Button,
-  Divider,
-  Flex,
   Heading,
   HStack,
   Icon,
+  Input,
+  Select,
   SimpleGrid,
   Stack,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
   Text,
+  Th,
+  Thead,
+  Tr,
 } from '@chakra-ui/react'
+import { useMemo, useState } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
 import { FaRupeeSign } from 'react-icons/fa'
 import { FiArrowUpRight, FiDownload, FiFileText } from 'react-icons/fi'
 import { reports } from '../data/reports.js'
-import { useI18n } from '../i18n/LanguageProvider.jsx'
 
 const statusColors = {
   Completed: 'teal',
@@ -24,103 +31,158 @@ const statusColors = {
 }
 
 function Reports() {
-  const { t, language } = useI18n()
+  const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
   const statusLabels = {
-    Completed: t('status.completed'),
-    'In Review': t('status.inReview'),
-    Draft: t('status.draft'),
+    Completed: 'Done',
+    'In Review': 'Under Review',
+    Draft: 'Draft',
   }
-  const clientTypeLabels = {
-    Bank: t('clientType.bank'),
-    Personal: t('clientType.personal'),
-  }
+  const normalizedQuery = query.trim().toLowerCase()
+
+  const filteredReports = useMemo(
+    () =>
+      reports.filter((report) => {
+        const matchesStatus =
+          statusFilter === 'all' || report.status.toLowerCase() === statusFilter
+        const matchesQuery =
+          normalizedQuery.length === 0 ||
+          [
+            report.id,
+            report.title,
+            report.titleMr,
+            report.address,
+            report.requestedBy,
+          ]
+            .filter(Boolean)
+            .some((value) => value.toLowerCase().includes(normalizedQuery))
+
+        return matchesStatus && matchesQuery
+      }),
+    [normalizedQuery, statusFilter],
+  )
 
   return (
     <Stack spacing={8}>
       <Stack spacing={3}>
         <Badge colorScheme="teal" variant="subtle" w="fit-content">
-          {t('reports.badge')}
+          Valuation reports
         </Badge>
-        <Heading>{t('reports.heading')}</Heading>
+        <Heading>Your valuation reports</Heading>
         <Text color="gray.700">
-          {t('reports.subheading')}
+          Track submitted properties and download final reports.
         </Text>
       </Stack>
 
-      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
-        {reports.map((report) => (
-          <Box
-            key={report.id}
-            bg="whiteAlpha.900"
-            borderRadius="24px"
-            p={{ base: 6, md: 7 }}
-            boxShadow="0 20px 50px rgba(18, 54, 53, 0.14)"
+      <Box
+        bg="whiteAlpha.900"
+        borderRadius="24px"
+        boxShadow="0 20px 50px rgba(18, 54, 53, 0.14)"
+        p={{ base: 4, md: 6 }}
+      >
+        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by reference, property, address, or requester"
+            bg="white"
+          />
+          <Select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            bg="white"
           >
-            <Stack spacing={4}>
-              <HStack justify="space-between" align="flex-start">
-                <Badge colorScheme={statusColors[report.status] || 'gray'}>
-                  {statusLabels[report.status] || report.status}
-                </Badge>
-                <HStack spacing={2} color="gray.500" fontSize="sm">
-                  <Icon as={FiFileText} />
-                  <Text>{report.id}</Text>
-                </HStack>
-              </HStack>
-              <Box>
-                <Heading size="md" mb={2}>
-                  {language === 'mr' && report.titleMr ? report.titleMr : report.title}
-                </Heading>
-                <Text color="gray.600">{report.address}</Text>
-              </Box>
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                <Box>
-                  <Text fontSize="sm" color="gray.500">
-                    {t('reports.label.requestedBy')}
-                  </Text>
-                  <Text fontWeight="600">{report.requestedBy}</Text>
-                </Box>
-                <Box>
-                  <Text fontSize="sm" color="gray.500">
-                    {t('reports.label.estimatedValue')}
-                  </Text>
-                  <HStack spacing={2}>
-                    <Icon as={FaRupeeSign} color="gray.500" />
-                    <Text fontWeight="600">{report.estimatedValue}</Text>
-                  </HStack>
-                </Box>
-                <Box>
-                  <Text fontSize="sm" color="gray.500">
-                    {t('reports.label.lastUpdate')}
-                  </Text>
-                  <Text fontWeight="600">{report.updatedOn}</Text>
-                </Box>
-                <Box>
-                  <Text fontSize="sm" color="gray.500">
-                    {t('reports.label.reportType')}
-                  </Text>
-                  <Text fontWeight="600">
-                    {clientTypeLabels[report.clientType] || report.clientType}
-                  </Text>
-                </Box>
-              </SimpleGrid>
-              <Divider borderColor="blackAlpha.200" />
-              <Flex gap={3} wrap="wrap">
-                <Button
-                  as={RouterLink}
-                  to={`/reports/${report.id}`}
-                  colorScheme="teal"
-                  rightIcon={<FiArrowUpRight />}
-                >
-                  {t('reports.button.viewReport')}
-                </Button>
-                <Button variant="outline" leftIcon={<FiDownload />}>
-                  {t('reports.button.downloadPdf')}
-                </Button>
-              </Flex>
-            </Stack>
-          </Box>
-        ))}
-      </SimpleGrid>
+            <option value="all">All statuses</option>
+            <option value="completed">Done</option>
+            <option value="in review">Under Review</option>
+            <option value="draft">Draft</option>
+          </Select>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setQuery('')
+              setStatusFilter('all')
+            }}
+          >
+            Clear search
+          </Button>
+        </SimpleGrid>
+      </Box>
+
+      <Box
+        bg="whiteAlpha.900"
+        borderRadius="24px"
+        boxShadow="0 20px 50px rgba(18, 54, 53, 0.14)"
+        overflow="hidden"
+      >
+        <TableContainer>
+          <Table variant="simple" size="md">
+            <Thead bg="blackAlpha.50">
+              <Tr>
+                <Th>Reference</Th>
+                <Th>Property</Th>
+                <Th>Estimated value (INR)</Th>
+                <Th>Status</Th>
+                <Th textAlign="right">Actions</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {filteredReports.map((report) => (
+                <Tr key={report.id} _hover={{ bg: 'blackAlpha.50' }}>
+                  <Td>
+                    <HStack spacing={2} color="gray.600" fontSize="sm">
+                      <Icon as={FiFileText} />
+                      <Text fontWeight="600">{report.id}</Text>
+                    </HStack>
+                  </Td>
+                  <Td minW={{ base: '220px', md: '280px' }}>
+                    <Stack spacing={1}>
+                      <Text fontWeight="600">{report.title}</Text>
+                      <Text color="gray.600" fontSize="sm">
+                        {report.address}
+                      </Text>
+                    </Stack>
+                  </Td>
+                  <Td>
+                    <HStack spacing={2}>
+                      <Icon as={FaRupeeSign} color="gray.500" />
+                      <Text fontWeight="600">{report.estimatedValue}</Text>
+                    </HStack>
+                  </Td>
+                  <Td>
+                    <Badge colorScheme={statusColors[report.status] || 'gray'}>
+                      {statusLabels[report.status] || report.status}
+                    </Badge>
+                  </Td>
+                  <Td>
+                    <HStack spacing={2} justify="flex-end">
+                      <Button
+                        as={RouterLink}
+                        to={report.id}
+                        colorScheme="teal"
+                        size="sm"
+                        rightIcon={<FiArrowUpRight />}
+                      >
+                        View report
+                      </Button>
+                      <Button size="sm" variant="outline" leftIcon={<FiDownload />}>
+                        Download PDF
+                      </Button>
+                    </HStack>
+                  </Td>
+                </Tr>
+              ))}
+              {filteredReports.length === 0 ? (
+                <Tr>
+                  <Td colSpan={5}>
+                    <Text color="gray.600">No reports found for the current search.</Text>
+                  </Td>
+                </Tr>
+              ) : null}
+            </Tbody>
+          </Table>
+        </TableContainer>
+      </Box>
     </Stack>
   )
 }

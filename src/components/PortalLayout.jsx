@@ -1,74 +1,40 @@
-import {
-  Badge,
-  Box,
-  Button,
-  Container,
-  Divider,
-  Flex,
-  Heading,
-  HStack,
-  Icon,
-  Select,
-  SimpleGrid,
-  Stack,
-  Text,
-} from '@chakra-ui/react'
-import { FaRupeeSign } from 'react-icons/fa'
-import {
-  FiBriefcase,
-  FiClipboard,
-  FiFileText,
-  FiHelpCircle,
-  FiShield,
-} from 'react-icons/fi'
-import { Link as RouterLink, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { useI18n } from '../i18n/LanguageProvider.jsx'
-
-const navSections = [
-  {
-    titleKey: 'nav.section.valuation',
-    items: [
-      { labelKey: 'nav.directValuation', to: '/valuation', icon: FiClipboard },
-      { labelKey: 'nav.reports', to: '/reports', icon: FiFileText },
-    ],
-  },
-]
-
-const navItems = navSections.flatMap((section) => section.items)
-
-const NavItem = ({ to, icon, children, end }) => (
-  <Box
-    as={NavLink}
-    to={to}
-    end={end}
-    display="flex"
-    alignItems="center"
-    gap={3}
-    px={3}
-    py={2.5}
-    borderRadius="12px"
-    fontWeight="600"
-    color="gray.600"
-    transition="all 0.2s ease"
-    _hover={{ bg: 'blackAlpha.50', color: 'gray.900' }}
-    _activeLink={{
-      bg: 'brand.500',
-      color: 'white',
-      boxShadow: '0 12px 20px rgba(39, 152, 145, 0.35)',
-    }}
-  >
-    <Icon as={icon} fontSize="18px" />
-    <Text fontSize="sm">{children}</Text>
-  </Box>
-)
+import { Box, Button, Container, Divider, Flex, Heading, HStack, Icon, Stack, Text } from '@chakra-ui/react'
+import { FiBriefcase, FiFileText, FiHelpCircle, FiHome, FiLogIn, FiShield, FiUser } from 'react-icons/fi'
+import { Link as RouterLink, Outlet, useLocation } from 'react-router-dom'
 
 function PortalLayout() {
-  const { language, setLanguage, t } = useI18n()
-  const location = useLocation()
-  const isReportRoute =
-    location.pathname === '/reports' || location.pathname.startsWith('/reports/')
-  const showSidebar = isReportRoute
-  const contentMaxW = showSidebar ? '6xl' : '7xl'
+  const { pathname } = useLocation()
+  const isHomePage = pathname === '/'
+  const isDirectValuationPage = pathname === '/valuation'
+  const isLoginPage = pathname === '/login'
+
+  const publicNavLinksByPath = {
+    '/': [],
+    '/valuation': [
+      { label: 'Home', to: '/', icon: FiHome },
+      { label: 'Personal Register', to: '/register/personal', icon: FiUser },
+    ],
+    '/login': [
+      { label: 'Home', to: '/', icon: FiHome },
+      { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
+      { label: 'Bank Register', to: '/register/bank', icon: FiBriefcase },
+    ],
+    '/register/personal': [
+      { label: 'Home', to: '/', icon: FiHome },
+      { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
+      { label: 'Bank Register', to: '/register/bank', icon: FiBriefcase },
+    ],
+    '/register/bank': [
+      { label: 'Home', to: '/', icon: FiHome },
+      { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
+      { label: 'Personal Register', to: '/register/personal', icon: FiUser },
+    ],
+  }
+
+  const navLinks = publicNavLinksByPath[pathname] ?? [
+    { label: 'Home', to: '/', icon: FiHome },
+    { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
+  ]
 
   return (
     <Box minH="100vh" position="relative" overflow="hidden">
@@ -87,243 +53,110 @@ function PortalLayout() {
         backgroundSize="100%, 100%, 28px 28px, 28px 28px"
         backgroundPosition="0 0, 0 0, -1px -1px, -1px -1px"
       />
-
-      <Flex position="relative" zIndex="1" minH="100vh">
-        {showSidebar ? (
-          <Box
-            as="aside"
-            display={{ base: 'none', lg: 'flex' }}
-            flexDirection="column"
-            w="280px"
-            p={6}
-            bg="whiteAlpha.900"
-            borderRight="1px solid"
-            borderColor="blackAlpha.200"
-            boxShadow="0 18px 40px rgba(18, 54, 53, 0.08)"
-          >
-            <HStack
-              spacing={3}
-              mb={8}
-              as={RouterLink}
-              to="/"
-              textDecoration="none"
-              _hover={{ textDecoration: 'none' }}
+      <Box position="relative" zIndex="1">
+        <Container maxW="7xl" py={{ base: 6, md: 10 }}>
+          <Stack spacing={6}>
+            <Box
+              as="header"
+              bg="whiteAlpha.900"
+              border="1px solid"
+              borderColor="blackAlpha.200"
+              borderRadius="20px"
+              px={{ base: 4, md: 6 }}
+              py={{ base: 3, md: 4 }}
+              boxShadow="0 14px 32px rgba(18, 54, 53, 0.08)"
             >
-              <Flex
-                align="center"
-                justify="center"
-                w="44px"
-                h="44px"
-                borderRadius="16px"
-                bg="brand.500"
-                color="white"
-                boxShadow="0 12px 20px rgba(39, 152, 145, 0.35)"
-              >
-                <Icon as={FaRupeeSign} fontSize="20px" />
-              </Flex>
-              <Box>
-                <Heading size="md">{t('brand.name')}</Heading>
-                <Text fontSize="sm" color="gray.600">
-                  {t('brand.subtitle')}
-                </Text>
-              </Box>
-            </HStack>
-
-            <Stack spacing={6} flex="1">
-              {navSections.map((section) => (
-                <Box key={section.titleKey}>
-                  <Text
-                    fontSize="xs"
-                    textTransform="uppercase"
-                    letterSpacing="0.2em"
-                    color="gray.500"
-                    mb={3}
+              <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
+                <HStack
+                  spacing={3}
+                  as={RouterLink}
+                  to="/"
+                  textDecoration="none"
+                  _hover={{ textDecoration: 'none' }}
+                >
+                  <Flex
+                    align="center"
+                    justify="center"
+                    w="44px"
+                    h="44px"
+                    borderRadius="14px"
+                    bg="brand.600"
+                    color="white"
+                    fontWeight="700"
+                    letterSpacing="0.04em"
                   >
-                    {t(section.titleKey)}
-                  </Text>
-                  <Stack spacing={1}>
-                    {section.items.map((item) => (
-                      <NavItem key={item.to} to={item.to} icon={item.icon} end={item.end}>
-                        {t(item.labelKey)}
-                      </NavItem>
-                    ))}
-                  </Stack>
-                </Box>
-              ))}
-            </Stack>
+                    SDG
+                  </Flex>
+                  <Box>
+                    <Heading size="sm">SDG Group</Heading>
+                    <Text fontSize="xs" color="gray.600">
+                      Valuation portal
+                    </Text>
+                  </Box>
+                </HStack>
 
-            <Box mt={6}>
-              <Divider borderColor="blackAlpha.200" mb={4} />
-              <Stack spacing={4}>
-                <HStack spacing={3}>
+                <HStack spacing={2} flexWrap="wrap">
+                  {isHomePage
+                    ? null
+                    : navLinks.map((item) => (
+                        <Button
+                          key={item.to}
+                          as={RouterLink}
+                          to={item.to}
+                          variant="ghost"
+                          size="sm"
+                          leftIcon={<Icon as={item.icon} />}
+                        >
+                          {item.label}
+                        </Button>
+                      ))}
+                  {isLoginPage ? null : (
+                    <Button
+                      as={RouterLink}
+                      to="/login"
+                      size="sm"
+                      colorScheme={isDirectValuationPage ? 'blue' : 'teal'}
+                      leftIcon={<FiLogIn />}
+                    >
+                      Login
+                    </Button>
+                  )}
+                </HStack>
+              </Flex>
+            </Box>
+
+            <Box>
+              <Outlet />
+            </Box>
+
+            <Divider borderColor="blackAlpha.200" />
+
+            <Flex align="center" justify="space-between" wrap="wrap" gap={4} pb={2}>
+              <HStack spacing={3}>
+                <Icon as={FiShield} color="teal.500" />
+                <Text color="gray.600">Your property details are handled securely.</Text>
+              </HStack>
+              <HStack spacing={4}>
+                <HStack spacing={2}>
                   <Icon as={FiHelpCircle} color="teal.500" />
                   <Text fontSize="sm" color="gray.600">
-                    {t('help.support')}
+                    Need help? support@valulink.io
                   </Text>
                 </HStack>
                 <Button
                   as={RouterLink}
-                  to="/valuation"
-                  size="sm"
+                  to="/register/bank"
+                  variant="ghost"
                   colorScheme="teal"
-                  leftIcon={<FiClipboard />}
+                  leftIcon={<FiBriefcase />}
                 >
-                  {t('button.newValuation')}
+                  Bank signup
                 </Button>
-              </Stack>
-            </Box>
-          </Box>
-        ) : null}
-
-        <Box flex="1">
-          <Container maxW={contentMaxW} py={{ base: 6, md: 10 }}>
-            <Stack spacing={6}>
-              <Box
-                bg="whiteAlpha.900"
-                borderRadius="24px"
-                p={{ base: 5, md: 6 }}
-                boxShadow="0 18px 40px rgba(18, 54, 53, 0.12)"
-                display={{ base: 'block', lg: 'none' }}
-              >
-                <Stack spacing={4}>
-                  <Flex align="center" justify="space-between" gap={4} wrap="wrap">
-                    <HStack spacing={3}>
-                      <Flex
-                        align="center"
-                        justify="center"
-                        w="40px"
-                        h="40px"
-                        borderRadius="14px"
-                        bg="brand.500"
-                        color="white"
-                      >
-                        <Icon as={FaRupeeSign} fontSize="18px" />
-                      </Flex>
-                      <Box>
-                        <Heading size="sm">{t('brand.name')}</Heading>
-                        <Text fontSize="xs" color="gray.600">
-                          {t('brand.subtitle')}
-                        </Text>
-                      </Box>
-                    </HStack>
-                    <HStack spacing={2}>
-                      <Button as={RouterLink} to="/login" size="sm" variant="outline" colorScheme="teal">
-                        {t('nav.login')}
-                      </Button>
-                      <Button as={RouterLink} to="/valuation" size="sm" colorScheme="teal">
-                        {t('button.newValuation')}
-                      </Button>
-                    </HStack>
-                  </Flex>
-                  <HStack justify="space-between">
-                    <Text fontSize="xs" color="gray.500" textTransform="uppercase" letterSpacing="0.2em">
-                      {t('language.label')}
-                    </Text>
-                    <Select
-                      size="sm"
-                      value={language}
-                      onChange={(event) => setLanguage(event.target.value)}
-                      maxW="160px"
-                      aria-label={t('language.label')}
-                      bg="white"
-                    >
-                      <option value="en">{t('language.english')}</option>
-                      <option value="mr">{t('language.marathi')}</option>
-                    </Select>
-                  </HStack>
-                  <SimpleGrid columns={{ base: 2, md: 3 }} spacing={2}>
-                    {navItems.map((item) => (
-                      <NavItem key={item.to} to={item.to} icon={item.icon} end={item.end}>
-                        {t(item.labelKey)}
-                      </NavItem>
-                    ))}
-                  </SimpleGrid>
-                </Stack>
-              </Box>
-
-              <Box
-                bg="whiteAlpha.900"
-                borderRadius="24px"
-                p={{ base: 6, md: 8 }}
-                boxShadow="0 18px 40px rgba(18, 54, 53, 0.12)"
-                display={{ base: 'none', lg: 'block' }}
-              >
-                <Flex align="center" justify="space-between" wrap="wrap" gap={4}>
-                  <Stack spacing={1}>
-                    <Text fontSize="sm" color="gray.500">
-                      {t('workspace.label')}
-                    </Text>
-                    <Heading size="md">{t('workspace.title')}</Heading>
-                    <Text color="gray.600">
-                      {t('workspace.subtitle')}
-                    </Text>
-                  </Stack>
-                  <HStack spacing={2}>
-                    <Badge colorScheme="teal" variant="subtle">
-                      {t('badge.clientBank')}
-                    </Badge>
-                    <Stack spacing={1} minW="150px">
-                      <Text
-                        fontSize="xs"
-                        textTransform="uppercase"
-                        letterSpacing="0.2em"
-                        color="gray.500"
-                      >
-                        {t('language.label')}
-                      </Text>
-                      <Select
-                        size="sm"
-                        value={language}
-                        onChange={(event) => setLanguage(event.target.value)}
-                        aria-label={t('language.label')}
-                        bg="white"
-                      >
-                        <option value="en">{t('language.english')}</option>
-                        <option value="mr">{t('language.marathi')}</option>
-                      </Select>
-                    </Stack>
-                    <Button as={RouterLink} to="/login" size="sm" variant="ghost" colorScheme="teal">
-                      {t('nav.login')}
-                    </Button>
-                    <Button as={RouterLink} to="/reports" size="sm" variant="outline" colorScheme="teal">
-                      {t('button.viewReports')}
-                    </Button>
-                    <Button as={RouterLink} to="/valuation" size="sm" colorScheme="teal">
-                      {t('button.newValuation')}
-                    </Button>
-                  </HStack>
-                </Flex>
-              </Box>
-
-              <Box>
-                <Outlet />
-              </Box>
-
-              <Divider borderColor="blackAlpha.200" />
-
-              <Flex align="center" justify="space-between" wrap="wrap" gap={4} pb={2}>
-                <HStack spacing={3}>
-                  <Icon as={FiShield} color="teal.500" />
-                  <Text color="gray.600">
-                    {t('footer.secure')}
-                  </Text>
-                </HStack>
-                <HStack spacing={4}>
-                  <Button
-                    as={RouterLink}
-                    to="/register/bank"
-                    variant="ghost"
-                    colorScheme="teal"
-                    leftIcon={<FiBriefcase />}
-                  >
-                    {t('button.bankOnboarding')}
-                  </Button>
-                </HStack>
-              </Flex>
-            </Stack>
-          </Container>
-        </Box>
-      </Flex>
+              </HStack>
+            </Flex>
+          </Stack>
+        </Container>
+      </Box>
     </Box>
   )
 }

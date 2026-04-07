@@ -1,7 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600&family=Noto+Serif+Devanagari:wght@500;600;700&family=Playfair+Display:wght@500;600;700&family=Sora:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
 
 :root {
-  font-family: 'Sora', 'Noto Sans Devanagari', 'Segoe UI', sans-serif;
+  font-family: 'Manrope', 'Noto Sans Devanagari', 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light;

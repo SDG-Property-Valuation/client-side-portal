@@ -1,10 +1,7 @@
 import { Box, Button, Heading, Stack, Text } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
-import { useI18n } from '../i18n/LanguageProvider.jsx'
 
 function NotFound() {
-  const { t } = useI18n()
-
   return (
     <Box
       bg="whiteAlpha.900"
@@ -13,12 +10,12 @@ function NotFound() {
       boxShadow="0 20px 50px rgba(18, 54, 53, 0.14)"
     >
       <Stack spacing={3} align="flex-start">
-        <Heading size="lg">{t('notFound.title')}</Heading>
+        <Heading size="lg">Page not found</Heading>
         <Text color="gray.600">
-          {t('notFound.body')}
+          This page is not available. Go back to the home page.
         </Text>
         <Button as={RouterLink} to="/" colorScheme="teal">
-          {t('notFound.button')}
+          Back to home
         </Button>
       </Stack>
     </Box>

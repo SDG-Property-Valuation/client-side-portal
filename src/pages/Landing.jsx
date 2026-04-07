@@ -15,53 +15,71 @@ import {
   Text,
 } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
-import { FiBriefcase, FiCheckCircle, FiFileText, FiShield, FiUser } from 'react-icons/fi'
-import { useI18n } from '../i18n/LanguageProvider.jsx'
+import { FiBriefcase, FiFileText, FiLogIn, FiShield, FiUser } from 'react-icons/fi'
+import { useAuth } from '../auth/AuthProvider.jsx'
 
 function Landing() {
-  const { t } = useI18n()
+  const { authRole, isAuthenticated, isAuthLoading, user } = useAuth()
+  const hasSavedSession = Boolean(user && authRole)
+  const shouldShowWorkspaceCard = isAuthenticated || hasSavedSession
+
   const actionCards = [
+    ...(shouldShowWorkspaceCard
+      ? [
+          {
+            title: isAuthLoading ? 'Checking your session' : 'Open Workspace',
+            description: isAuthLoading
+              ? 'We found a saved account and are confirming your access now.'
+              : 'Continue to your reports, requested inspections, invoices, and settings.',
+            to: '/workspace/reports',
+            icon: FiLogIn,
+            color: 'teal',
+            action: isAuthLoading ? 'Checking session' : 'Open workspace',
+            isDisabled: isAuthLoading,
+          },
+        ]
+      : []),
     {
-      title: t('landing.card.personal.title'),
-      description: t('landing.card.personal.description'),
+      title: 'Register as Personal',
+      description: 'Owners, brokers, and other users can create an account in minutes.',
       to: '/register/personal',
       icon: FiUser,
       color: 'teal',
-      action: t('landing.card.personal.action'),
+      action: 'Individual signup',
     },
     {
-      title: t('landing.card.bank.title'),
-      description: t('landing.card.bank.description'),
+      title: 'Register as Bank',
+      description: 'Register your bank team and manage valuation requests in one place.',
       to: '/register/bank',
       icon: FiBriefcase,
       color: 'orange',
-      action: t('landing.card.bank.action'),
+      action: 'Bank signup',
     },
     {
-      title: t('landing.card.direct.title'),
-      description: t('landing.card.direct.description'),
+      title: 'Direct Valuation',
+      description: 'Share property details now, even without an account.',
       to: '/valuation',
       icon: FiFileText,
       color: 'blue',
-      action: t('landing.card.direct.action'),
+      action: 'Start valuation',
     },
   ]
 
   const stats = [
     {
-      label: t('landing.stats.onboarding.label'),
-      value: t('landing.stats.onboarding.value'),
-      help: t('landing.stats.onboarding.help'),
+      label: 'Avg signup time',
+      value: '2 mins',
+      help: 'Signup for individual or bank',
     },
     {
-      label: t('landing.stats.turnaround.label'),
-      value: t('landing.stats.turnaround.value'),
-      help: t('landing.stats.turnaround.help'),
+      label: 'Turnaround goal',
+      value: '24 hrs',
+      help: 'From request to report',
     },
     {
-      label: t('landing.stats.audit.label'),
-      value: t('landing.stats.audit.value'),
-      help: t('landing.stats.audit.help'),
+      label: 'Tracking coverage',
+      value: '100%',
+      help: 'Every step is recorded',
     },
   ]
 
@@ -77,33 +95,13 @@ function Landing() {
             py={1}
             borderRadius="full"
           >
-            {t('landing.badge')}
+            Property valuation portal
           </Badge>
           <Heading fontSize={{ base: '3xl', md: '4xl' }} lineHeight="1.1">
-            {t('landing.heading')}
+            Register, log in, and share property details in one place.
           </Heading>
           <Text fontSize="lg" color="gray.700">
-            {t('landing.subheading')}
-          </Text>
-          <HStack spacing={3} flexWrap="wrap">
-            <Button
-              as={RouterLink}
-              to="/register/personal"
-              size="lg"
-              colorScheme="teal"
-              leftIcon={<FiCheckCircle />}
-            >
-              {t('landing.registerPersonal')}
-            </Button>
-            <Button as={RouterLink} to="/register/bank" size="lg" variant="outline">
-              {t('landing.registerBank')}
-            </Button>
-          </HStack>
-          <Text color="gray.600">
-            {t('landing.loginPrompt')}{' '}
-            <Button as={RouterLink} to="/login" variant="link" colorScheme="teal">
-              {t('landing.loginLink')}
-            </Button>
+            This portal helps individuals and banks share property details and request valuations quickly.
           </Text>
           <SimpleGrid columns={{ base: 1, sm: 3 }} spacing={4}>
             {stats.map((stat) => (
@@ -152,9 +150,15 @@ function Landing() {
                   <Text color="gray.600" mb={4}>
                     {card.description}
                   </Text>
-                  <Button as={RouterLink} to={card.to} colorScheme={card.color}>
-                    {card.action}
-                  </Button>
+                  {card.isDisabled ? (
+                    <Button colorScheme={card.color} isDisabled>
+                      {card.action}
+                    </Button>
+                  ) : (
+                    <Button as={RouterLink} to={card.to} colorScheme={card.color}>
+                      {card.action}
+                    </Button>
+                  )}
                 </Box>
               </Flex>
             </Box>
@@ -170,31 +174,31 @@ function Landing() {
       >
         <HStack spacing={3} mb={6}>
           <Icon as={FiShield} color="teal.500" fontSize="22px" />
-          <Heading size="md">{t('landing.how.title')}</Heading>
+          <Heading size="md">How it works</Heading>
         </HStack>
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
           <Box>
             <Text fontWeight="600" mb={2}>
-              {t('landing.how.step1.title')}
+              1. Choose a path
             </Text>
             <Text color="gray.600">
-              {t('landing.how.step1.body')}
+              Sign up as an individual, sign up as a bank user, or start direct valuation.
             </Text>
           </Box>
           <Box>
             <Text fontWeight="600" mb={2}>
-              {t('landing.how.step2.title')}
+              2. Share details
             </Text>
             <Text color="gray.600">
-              {t('landing.how.step2.body')}
+              Enter property address, registration number, and reason for valuation.
             </Text>
           </Box>
           <Box>
             <Text fontWeight="600" mb={2}>
-              {t('landing.how.step3.title')}
+              3. Track outcomes
             </Text>
             <Text color="gray.600">
-              {t('landing.how.step3.body')}
+              Get inspection updates and final reports in your account.
             </Text>
           </Box>
         </SimpleGrid>

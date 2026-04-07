@@ -3,12 +3,12 @@ import { createRoot } from 'react-dom/client'
 import { ChakraProvider, extendTheme } from '@chakra-ui/react'
 import './index.css'
 import App from './App.jsx'
-import { LanguageProvider } from './i18n/LanguageProvider.jsx'
+import { AuthProvider } from './auth/AuthProvider.jsx'
 
 const theme = extendTheme({
   fonts: {
-    heading: "'Playfair Display', 'Noto Serif Devanagari', serif",
-    body: "'Sora', 'Noto Sans Devanagari', sans-serif",
+    heading: "'Manrope', 'Noto Sans Devanagari', sans-serif",
+    body: "'Manrope', 'Noto Sans Devanagari', sans-serif",
   },
   colors: {
     brand: {
@@ -37,9 +37,9 @@ const theme = extendTheme({
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ChakraProvider theme={theme}>
-      <LanguageProvider>
+      <AuthProvider>
         <App />
-      </LanguageProvider>
+      </AuthProvider>
     </ChakraProvider>
   </StrictMode>,
 )
