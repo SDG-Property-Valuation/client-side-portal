@@ -25,6 +25,7 @@ import {
 import { useState } from 'react'
 import { FaRupeeSign } from 'react-icons/fa'
 import { FiBriefcase, FiCalendar, FiFileText, FiMail, FiMapPin, FiPhone, FiUser } from 'react-icons/fi'
+import { PROPERTY_TYPE_OPTIONS, VALUATION_PURPOSE_OPTIONS } from '../constants/valuationOptions.js'
 import { Link as RouterLink } from 'react-router-dom'
 
 const clientDefaultValues = {
@@ -225,10 +226,11 @@ function DirectValuation() {
                       onChange={handleClientChange('propertyType')}
                       required
                     >
-                      <option value="residential">Residential</option>
-                      <option value="commercial">Commercial</option>
-                      <option value="land">Land</option>
-                      <option value="industrial">Industrial</option>
+                      {PROPERTY_TYPE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
                     </Select>
                   </FormControl>
 
@@ -255,10 +257,11 @@ function DirectValuation() {
                       onChange={handleClientChange('valuationPurpose')}
                       required
                     >
-                      <option value="sale">Sale or purchase</option>
-                      <option value="loan">Loan approval</option>
-                      <option value="insurance">Insurance coverage</option>
-                      <option value="legal">Legal purpose</option>
+                      {VALUATION_PURPOSE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
                     </Select>
                   </FormControl>
 
@@ -453,10 +456,11 @@ function DirectValuation() {
                       onChange={handleBankChange('propertyType')}
                       required
                     >
-                      <option value="residential">Residential</option>
-                      <option value="commercial">Commercial</option>
-                      <option value="land">Land</option>
-                      <option value="industrial">Industrial</option>
+                      {PROPERTY_TYPE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
                     </Select>
                   </FormControl>
 

@@ -40,20 +40,20 @@ function Landing() {
         ]
       : []),
     {
-      title: 'Register as Personal',
-      description: 'Owners, brokers, and other users can create an account in minutes.',
-      to: '/register/personal',
+      title: 'Register as Customer',
+      description: 'Owners, buyers, brokers, and agents can create an account in minutes.',
+      to: '/register/customer',
       icon: FiUser,
       color: 'teal',
-      action: 'Individual signup',
+      action: 'Customer signup',
     },
     {
-      title: 'Register as Bank',
-      description: 'Register your bank team and manage valuation requests in one place.',
-      to: '/register/bank',
+      title: 'Register as Banker',
+      description: 'Register your banking team and manage valuation requests in one place.',
+      to: '/register/banker',
       icon: FiBriefcase,
       color: 'orange',
-      action: 'Bank signup',
+      action: 'Banker signup',
     },
     {
       title: 'Direct Valuation',
@@ -69,7 +69,7 @@ function Landing() {
     {
       label: 'Avg signup time',
       value: '2 mins',
-      help: 'Signup for individual or bank',
+      help: 'Signup for customer or banker',
     },
     {
       label: 'Turnaround goal',
@@ -101,7 +101,7 @@ function Landing() {
             Register, log in, and share property details in one place.
           </Heading>
           <Text fontSize="lg" color="gray.700">
-            This portal helps individuals and banks share property details and request valuations quickly.
+            This portal helps customers and bankers share property details and request valuations quickly.
           </Text>
           <SimpleGrid columns={{ base: 1, sm: 3 }} spacing={4}>
             {stats.map((stat) => (
@@ -182,7 +182,7 @@ function Landing() {
               1. Choose a path
             </Text>
             <Text color="gray.600">
-              Sign up as an individual, sign up as a bank user, or start direct valuation.
+              Sign up as a customer, sign up as a banker, or start direct valuation.
             </Text>
           </Box>
           <Box>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="mask-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f7f2e8" />
+      <stop offset="100%" stop-color="#40b2ab" />
+    </linearGradient>
+    <linearGradient id="mask-panel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#123635" />
+      <stop offset="100%" stop-color="#279891" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#mask-bg)" />
+  <circle cx="256" cy="256" r="180" fill="url(#mask-panel)" />
+  <path
+    d="M192 168h86c49 0 84 31 84 78s-35 78-84 78h-34v44h-52V168Zm52 48v60h34c22 0 32-11 32-30s-10-30-32-30h-34Z"
+    fill="#f7f2e8"
+  />
+  <path
+    d="M182 344c18 18 43 28 69 28 31 0 61-14 80-39"
+    fill="none"
+    stroke="#d1eeeb"
+    stroke-linecap="round"
+    stroke-width="20"
+  />
+</svg>

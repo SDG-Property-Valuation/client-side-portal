@@ -8,12 +8,18 @@ import {
   Heading,
   HStack,
   Icon,
-  Image,
   Link,
   SimpleGrid,
   Spinner,
   Stack,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
   Text,
+  Th,
+  Thead,
+  Tr,
 } from '@chakra-ui/react'
 import apiClient from '../api/apiClient.js'
 import { API_ENDPOINTS } from '../api/endpoints.js'
@@ -36,9 +42,9 @@ import { resolveAuthRole } from '../auth/authUtils.js'
 const REQUEST_DETAILS_TEXT = {
   badge: 'Inspection request details',
   heading: 'Inspection request details',
-  subheading: 'Check full request details and view uploaded documents.',
+  subheading: 'Check full request details and review uploaded or physically submitted documents.',
   back: 'Back to requests',
-  accessDenied: 'Only client accounts can view request details.',
+  accessDenied: 'Only client and banker accounts can view request details.',
   requestId: 'Request ID',
   ownerName: 'Customer / Borrower name',
   ownerEmail: 'Email ID',
@@ -50,15 +56,53 @@ const REQUEST_DETAILS_TEXT = {
   visitAddress: 'Property visit address',
   clientAddress: 'Client address',
   documentsHeading: 'Supporting documents',
-  documentsSubheading: 'View files here or open any file in a new tab.',
+  documentsSubheading:
+    'View uploaded files here, and check which documents will be submitted physically.',
+  documentsTableHeading: 'Supporting document list',
+  documentsTableSubheading: 'Review every required document and its latest available details.',
   documentsEmpty: 'No supporting documents found for this request.',
   preview: 'Preview',
   uploadedOn: 'Uploaded on',
   unknownFile: 'Uploaded file',
+  physicalSubmission: 'Physical submission',
+  physicalSubmissionMessage: 'This document will be submitted physically.',
+  uploadedSubmission: 'Uploaded',
+  noDetails: 'No details',
+  documentColumn: 'Document',
+  statusColumn: 'Status',
+  fileColumn: 'File details',
+  submissionColumn: 'Submission',
+  previewColumn: 'Preview',
+  categories: 'Categories',
+  uploaded: 'Uploaded',
+  physical: 'Physical',
   invalidRequest: 'Invalid request selected.',
   loadFailed: 'Unable to load request details right now.',
   refresh: 'Refresh',
 }
+
+const supportingDocumentFields = [
+  { name: 'regd_SaleDeed', label: 'Registered Sale Deed' },
+  { name: 'regd_LeaseDeed', label: 'Registered Lease Deed' },
+  { name: 'agreementToSale', label: 'Agreement to Sale' },
+  { name: 'deedOfDeclaration', label: 'Deed of Declaration' },
+  { name: 'occupancy', label: 'Occupancy Certificate' },
+  { name: 'PR_Card', label: 'PR Card' },
+  { name: 'Namuna_No43_Namuna_No8', label: 'Namuna No. 43 / Namuna No. 8' },
+  { name: 'landBoundariesbyGramsevak', label: 'Land Boundaries by Gramsevak' },
+  { name: 'approvedPermissionPlan', label: 'Approved Permission Plan' },
+  { name: 'approved_Lay_Out', label: 'Approved Layout Plan' },
+  { name: 'non_agricultureOrder', label: 'Non-Agriculture Order' },
+  { name: 'Extract_7_12', label: 'Extract 7/12' },
+  { name: 'titleSearchReportByAdvocate', label: 'Title Search Report by Advocate' },
+  { name: 'totalLandMeasurement', label: 'Total Land Measurement' },
+  { name: 'commencementCertificate', label: 'Commencement Certificate' },
+  { name: 'transferOrder', label: 'Transfer Order' },
+  { name: 'RERA_Certificate', label: 'RERA Certificate' },
+  { name: 'electricityBill', label: 'Electricity Bill' },
+  { name: 'work_Done_complicationPlan', label: 'Work Done complicationPlan' },
+  { name: 'others', label: 'Others' },
+]
 
 const formatDate = (value) => {
   if (!value) {
@@ -96,20 +140,6 @@ const getAddressLabel = (addressDetails) => {
   return addressSegments.length ? addressSegments.join(', ') : '--'
 }
 
-const getReadableDocumentGroupName = (key) =>
-  String(key)
-    .replaceAll('_', ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/\b\w/g, (character) => character.toUpperCase())
-
-const getFileExtension = (url = '') => {
-  const normalizedUrl = String(url).split('?')[0].toLowerCase()
-  const extension = normalizedUrl.split('.').pop()
-  return extension || ''
-}
-
 const getDisplayValue = (value) => {
   if (value === null || value === undefined) {
     return '--'
@@ -118,9 +148,6 @@ const getDisplayValue = (value) => {
   const normalizedValue = String(value).trim()
   return normalizedValue || '--'
 }
-
-const isImageFile = (url = '') => ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(getFileExtension(url))
-const isPdfFile = (url = '') => getFileExtension(url) === 'pdf'
 
 const DetailItem = ({ icon, label, value, ...boxProps }) => (
   <Box
@@ -152,38 +179,48 @@ function RequestedInspectionDetails() {
   const [errorMessage, setErrorMessage] = useState('')
 
   const resolvedRole = useMemo(() => resolveAuthRole(user?.role, authRole), [authRole, user?.role])
+  const isClient = resolvedRole === 'client'
+  const isBanker = resolvedRole === 'banker'
+  const canViewRequestDetails = isClient || isBanker
 
-  const documentGroups = useMemo(() => {
-    if (!requestDetails?.supportingDocuments || typeof requestDetails.supportingDocuments !== 'object') {
-      return []
-    }
+  const documentTableRows = useMemo(() => {
+    const documents = requestDetails?.supportingDocuments
 
-    return Object.entries(requestDetails.supportingDocuments)
-      .map(([group, files]) => ({
-        group,
-        files: Array.isArray(files) ? files : [],
-      }))
-      .filter(({ files }) => files.length > 0)
+    return supportingDocumentFields.map(({ name, label }) => {
+      const value = documents?.[name]
+      const isOffline = Boolean(documents?.[`${name}_offline`])
+      const normalizedFiles = Array.isArray(value)
+        ? value.filter(Boolean)
+        : value && typeof value === 'object'
+          ? [value]
+          : []
+
+      const hasFiles = normalizedFiles.length > 0
+      const status = hasFiles
+        ? REQUEST_DETAILS_TEXT.uploadedSubmission
+        : isOffline
+          ? REQUEST_DETAILS_TEXT.physicalSubmission
+          : REQUEST_DETAILS_TEXT.noDetails
+      const submission = isOffline
+        ? REQUEST_DETAILS_TEXT.physicalSubmission
+        : hasFiles
+          ? REQUEST_DETAILS_TEXT.uploadedSubmission
+          : REQUEST_DETAILS_TEXT.noDetails
+
+      return {
+        key: name,
+        label,
+        status,
+        submission,
+        files: normalizedFiles,
+      }
+    })
   }, [requestDetails?.supportingDocuments])
 
   const totalDocumentCount = useMemo(
-    () => documentGroups.reduce((total, group) => total + group.files.length, 0),
-    [documentGroups],
+    () => documentTableRows.filter((row) => row.status !== REQUEST_DETAILS_TEXT.noDetails).length,
+    [documentTableRows],
   )
-
-  const flattenedDocuments = useMemo(
-    () =>
-      documentGroups.flatMap(({ group, files }) =>
-        files.map((file, index) => ({
-          group,
-          file,
-          key: `${group}-${file?.publicId || file?.url || 'document'}-${file?.uploadedAt || index}-${index}`,
-        })),
-      ),
-    [documentGroups],
-  )
-
-  const isClient = resolvedRole === 'client'
 
   const fetchRequestDetails = useCallback(async () => {
     if (!requestId) {
@@ -196,12 +233,9 @@ function RequestedInspectionDetails() {
     setErrorMessage('')
 
     try {
-      const response = await apiClient.get(
-        `${API_ENDPOINTS.client.requestedInspections}/${requestId}`,
-        {
-          withCredentials: true,
-        },
-      )
+      const response = await apiClient.get(`${API_ENDPOINTS.inspections.detail}/${requestId}`, {
+        withCredentials: true,
+      })
 
       const apiResponse = response?.data ?? {}
 
@@ -225,14 +259,14 @@ function RequestedInspectionDetails() {
   }, [requestId])
 
   useEffect(() => {
-    if (!isClient) {
+    if (!canViewRequestDetails) {
       setIsLoading(false)
       setErrorMessage('')
       return
     }
 
     fetchRequestDetails()
-  }, [fetchRequestDetails, isClient])
+  }, [canViewRequestDetails, fetchRequestDetails])
 
   return (
     <Stack spacing={6}>
@@ -268,7 +302,7 @@ function RequestedInspectionDetails() {
             </Button>
           </Flex>
 
-          {isClient && !isLoading && requestDetails ? (
+          {canViewRequestDetails && !isLoading && requestDetails ? (
             <SimpleGrid columns={{ base: 1, sm: 3 }} spacing={3}>
               <DetailItem
                 icon={FiFileText}
@@ -290,14 +324,14 @@ function RequestedInspectionDetails() {
         </Stack>
       </Box>
 
-      {!isClient ? (
+      {!canViewRequestDetails ? (
         <Alert status="warning" borderRadius="md">
           <AlertIcon />
           {REQUEST_DETAILS_TEXT.accessDenied}
         </Alert>
       ) : null}
 
-      {isClient && errorMessage ? (
+      {canViewRequestDetails && errorMessage ? (
         <Alert status="error" borderRadius="md">
           <AlertIcon />
           <Stack spacing={3}>
@@ -315,13 +349,13 @@ function RequestedInspectionDetails() {
         </Alert>
       ) : null}
 
-      {isClient && isLoading ? (
+      {canViewRequestDetails && isLoading ? (
         <HStack justify="center" py={10}>
           <Spinner color="teal.500" thickness="4px" />
         </HStack>
       ) : null}
 
-      {isClient && !isLoading && requestDetails ? (
+      {canViewRequestDetails && !isLoading && requestDetails ? (
         <Stack spacing={6}>
           <Box
             bg="whiteAlpha.900"
@@ -338,19 +372,19 @@ function RequestedInspectionDetails() {
               <DetailItem
                 icon={FiUser}
                 label={REQUEST_DETAILS_TEXT.ownerName}
-                value={getDisplayValue(requestDetails.ownerName)}
+                value={getDisplayValue(requestDetails.ownerName || requestDetails.borrowerName)}
               />
               <DetailItem
                 icon={FiMail}
                 label={REQUEST_DETAILS_TEXT.ownerEmail}
-                value={getDisplayValue(requestDetails.ownerEmail)}
+                value={getDisplayValue(requestDetails.ownerEmail || requestDetails.borrowerEmail)}
               />
               <DetailItem
                 icon={FiPhone}
                 label={REQUEST_DETAILS_TEXT.ownerPhone}
                 value={
-                  requestDetails.ownerPhoneNumber
-                    ? String(requestDetails.ownerPhoneNumber)
+                  requestDetails.ownerPhoneNumber || requestDetails.borrowerPhoneNumber
+                    ? String(requestDetails.ownerPhoneNumber || requestDetails.borrowerPhoneNumber)
                     : '--'
                 }
               />
@@ -382,7 +416,7 @@ function RequestedInspectionDetails() {
               <DetailItem
                 icon={FiMapPin}
                 label={REQUEST_DETAILS_TEXT.clientAddress}
-                value={getDisplayValue(requestDetails.ownerAddress)}
+                value={getDisplayValue(requestDetails.ownerAddress || requestDetails.borrowerAddress)}
                 gridColumn={{ base: 'auto', md: 'span 2', xl: 'auto' }}
               />
             </SimpleGrid>
@@ -395,140 +429,121 @@ function RequestedInspectionDetails() {
             p={{ base: 4, md: 6 }}
           >
             <Stack spacing={5}>
-              <Flex
-                justify="space-between"
-                align={{ base: 'flex-start', md: 'center' }}
-                gap={3}
-                wrap="wrap"
+              <Stack spacing={1}>
+                <Heading size="md">{REQUEST_DETAILS_TEXT.documentsTableHeading}</Heading>
+                <Text color="gray.600">{REQUEST_DETAILS_TEXT.documentsTableSubheading}</Text>
+              </Stack>
+
+              <TableContainer
+                border="1px solid"
+                borderColor="blackAlpha.200"
+                borderRadius="20px"
+                overflow="hidden"
               >
-                <Stack spacing={1}>
-                  <Heading size="md">{REQUEST_DETAILS_TEXT.documentsHeading}</Heading>
-                  <Text color="gray.600">{REQUEST_DETAILS_TEXT.documentsSubheading}</Text>
-                </Stack>
-
-                <HStack spacing={2.5} flexWrap="wrap">
-                  <HStack spacing={1.5} bg="teal.50" px={3} py={1.5} borderRadius="full">
-                    <Icon as={FiFile} color="teal.700" boxSize={3.5} />
-                    <Text fontSize="sm" fontWeight="700" color="teal.800">
-                      {totalDocumentCount}
-                    </Text>
-                  </HStack>
-                  <HStack spacing={1.5} bg="gray.50" px={3} py={1.5} borderRadius="full">
-                    <Icon as={FiFileText} color="gray.600" boxSize={3.5} />
-                    <Text fontSize="sm" fontWeight="700" color="gray.700">
-                      {documentGroups.length}
-                    </Text>
-                  </HStack>
-                </HStack>
-              </Flex>
-
-              {documentGroups.length === 0 ? (
-                <Text color="gray.600">{REQUEST_DETAILS_TEXT.documentsEmpty}</Text>
-              ) : (
-                <SimpleGrid
-                  columns={{
-                    base: 1,
-                    sm: 2,
-                  }}
-                  spacing={6}
-                >
-                  {flattenedDocuments.map(({ group, file, key }) => {
-                    const fileUrl = file?.url || ''
-                    const filePublicId =
-                      getDisplayValue(file?.publicId) === '--'
-                        ? REQUEST_DETAILS_TEXT.unknownFile
-                        : getDisplayValue(file?.publicId)
-                    const showImagePreview = isImageFile(fileUrl)
-                    const showPdfPreview = isPdfFile(fileUrl)
-                    const fileTypeLabel = getFileExtension(fileUrl).toUpperCase() || 'FILE'
-
-                    return (
-                      <Stack key={key} spacing={3.5}>
-                        <Flex justify="space-between" align="flex-start" gap={2} wrap="wrap">
-                          <Badge colorScheme="gray" variant="subtle">
-                            {getReadableDocumentGroupName(group)}
-                          </Badge>
-                          <Badge colorScheme="teal" variant="outline">
-                            {fileTypeLabel}
-                          </Badge>
-                        </Flex>
-
-                        <Box
-                          border="1px solid"
-                          borderColor="blackAlpha.200"
-                          borderRadius="10px"
-                          overflow="hidden"
-                          h="180px"
-                          bg="gray.50"
-                        >
-                          {showImagePreview && fileUrl ? (
-                            <Image
-                              src={fileUrl}
-                              alt={filePublicId}
-                              w="100%"
-                              h="100%"
-                              objectFit="cover"
-                            />
-                          ) : null}
-
-                          {showPdfPreview && fileUrl ? (
-                            <Box
-                              as="iframe"
-                              src={fileUrl}
-                              title={filePublicId}
-                              w="100%"
-                              h="100%"
-                              border="0"
-                              loading="lazy"
-                            />
-                          ) : null}
-
-                          {!showImagePreview && !showPdfPreview ? (
-                            <Stack h="100%" align="center" justify="center" spacing={1.5} color="gray.500">
-                              <Icon as={FiFile} boxSize={6} />
-                              <Text fontSize="xs" fontWeight="700" letterSpacing="0.06em">
-                                {fileTypeLabel}
-                              </Text>
-                            </Stack>
-                          ) : null}
-                        </Box>
-
-                        <Text fontWeight="700" color="gray.900" wordBreak="break-word">
-                          {filePublicId}
-                        </Text>
-
-                        <Flex
-                          justify="space-between"
-                          align={{ base: 'flex-start', md: 'center' }}
-                          gap={3}
-                          wrap="wrap"
-                        >
-                          <HStack spacing={1.5} color="gray.600">
-                            <Icon as={FiClock} boxSize={3.5} />
-                            <Text fontSize="sm">
-                              {REQUEST_DETAILS_TEXT.uploadedOn}: {formatDate(file?.uploadedAt)}
-                            </Text>
-                          </HStack>
-
-                          <Button
-                            as={Link}
-                            href={fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            size="sm"
-                            rightIcon={<FiExternalLink />}
-                            isDisabled={!fileUrl}
-                            colorScheme="teal"
-                            variant="solid"
+                <Table variant="simple" size="md" minW={{ base: '960px', xl: '100%' }}>
+                  <Thead bg="blackAlpha.50">
+                    <Tr>
+                      <Th>{REQUEST_DETAILS_TEXT.documentColumn}</Th>
+                      <Th>{REQUEST_DETAILS_TEXT.statusColumn}</Th>
+                      <Th>{REQUEST_DETAILS_TEXT.fileColumn}</Th>
+                      <Th>{REQUEST_DETAILS_TEXT.uploadedOn}</Th>
+                      <Th>{REQUEST_DETAILS_TEXT.submissionColumn}</Th>
+                      <Th textAlign="right">{REQUEST_DETAILS_TEXT.previewColumn}</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {documentTableRows.map((row) => (
+                      <Tr key={row.key} _hover={{ bg: 'blackAlpha.50' }}>
+                        <Td fontWeight="600" color="gray.900">
+                          {row.label}
+                        </Td>
+                        <Td>
+                          <Badge
+                            colorScheme={
+                              row.status === REQUEST_DETAILS_TEXT.uploadedSubmission
+                                ? 'green'
+                                : row.status === REQUEST_DETAILS_TEXT.physicalSubmission
+                                  ? 'orange'
+                                  : 'gray'
+                            }
+                            variant="subtle"
+                            px={2.5}
+                            py={1}
+                            borderRadius="full"
                           >
-                            {REQUEST_DETAILS_TEXT.preview}
-                          </Button>
-                        </Flex>
-                      </Stack>
-                    )
-                  })}
-                </SimpleGrid>
-              )}
+                            {row.status}
+                          </Badge>
+                        </Td>
+                        <Td>
+                          {row.files.length > 0 ? (
+                            <Stack spacing={1.5}>
+                              {row.files.map((file, index) => (
+                                <Text key={`${row.key}-file-${file?.publicId || index}`} fontSize="sm" color="gray.700">
+                                  {getDisplayValue(file?.publicId) === '--'
+                                    ? REQUEST_DETAILS_TEXT.unknownFile
+                                    : getDisplayValue(file?.publicId)}
+                                </Text>
+                              ))}
+                            </Stack>
+                          ) : (
+                            <Text fontSize="sm" color="gray.500">
+                              {REQUEST_DETAILS_TEXT.noDetails}
+                            </Text>
+                          )}
+                        </Td>
+                        <Td>
+                          {row.files.length > 0 ? (
+                            <Stack spacing={1.5}>
+                              {row.files.map((file, index) => (
+                                <Text key={`${row.key}-date-${file?.uploadedAt || index}`} fontSize="sm" color="gray.700">
+                                  {file?.uploadedAt
+                                    ? formatDate(file.uploadedAt)
+                                    : REQUEST_DETAILS_TEXT.noDetails}
+                                </Text>
+                              ))}
+                            </Stack>
+                          ) : (
+                            <Text fontSize="sm" color="gray.500">
+                              {REQUEST_DETAILS_TEXT.noDetails}
+                            </Text>
+                          )}
+                        </Td>
+                        <Td>
+                          <Text fontSize="sm" color={row.submission === REQUEST_DETAILS_TEXT.physicalSubmission ? 'orange.700' : 'gray.700'}>
+                            {row.submission}
+                          </Text>
+                        </Td>
+                        <Td textAlign="right">
+                          {row.files.length > 0 ? (
+                            <Stack spacing={2} align="flex-end">
+                              {row.files.map((file, index) => (
+                                <Button
+                                  key={`${row.key}-preview-${file?.url || index}`}
+                                  as={Link}
+                                  href={file?.url || ''}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  size="sm"
+                                  variant="outline"
+                                  colorScheme="teal"
+                                  rightIcon={<FiExternalLink />}
+                                  isDisabled={!file?.url}
+                                >
+                                  {REQUEST_DETAILS_TEXT.preview}
+                                </Button>
+                              ))}
+                            </Stack>
+                          ) : (
+                            <Text fontSize="sm" color="gray.500">
+                              {REQUEST_DETAILS_TEXT.noDetails}
+                            </Text>
+                          )}
+                        </Td>
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+              </TableContainer>
             </Stack>
           </Box>
         </Stack>

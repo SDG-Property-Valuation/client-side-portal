@@ -79,10 +79,11 @@ function Login() {
     const payload = {
       email: values.email.trim(),
       password: values.password,
+      role: 'client',
     }
 
     try {
-      const response = await apiClient.post(API_ENDPOINTS.client.login, payload, { withCredentials: true })
+      const response = await apiClient.post(API_ENDPOINTS.auth.login, payload, { withCredentials: true })
       const apiResponse = response?.data ?? {}
 
       if (!apiResponse.success) {
@@ -122,10 +123,11 @@ function Login() {
     const payload = {
       email: values.email.trim(),
       password: values.password,
+      role: 'banker',
     }
 
     try {
-      const response = await apiClient.post(API_ENDPOINTS.bank.login, payload, { withCredentials: true })
+      const response = await apiClient.post(API_ENDPOINTS.auth.login, payload, { withCredentials: true })
       const apiResponse = response?.data ?? {}
 
       if (!apiResponse.success) {
@@ -178,8 +180,8 @@ function Login() {
       >
         <Tabs variant="soft-rounded" colorScheme="teal" isFitted>
           <TabList>
-            <Tab>Individual</Tab>
-            <Tab>Bank</Tab>
+            <Tab>Customer</Tab>
+            <Tab>Banker</Tab>
           </TabList>
           <TabPanels>
             <TabPanel px={0}>
@@ -224,7 +226,7 @@ function Login() {
                     type="submit"
                     isLoading={personalForm.formState.isSubmitting}
                   >
-                    Log in as individual
+                    Log in as customer
                   </Button>
                 </Stack>
               </Box>
@@ -240,7 +242,7 @@ function Login() {
                     </Alert>
                   ) : null}
                   <FormControl isRequired isInvalid={Boolean(bankForm.formState.errors.email)}>
-                    <FormLabel>Bank email</FormLabel>
+                    <FormLabel>Banker email</FormLabel>
                     <InputGroup>
                       <InputLeftElement pointerEvents="none">
                         <FiBriefcase color="#94a3b8" />
@@ -265,7 +267,7 @@ function Login() {
                     type="submit"
                     isLoading={bankForm.formState.isSubmitting}
                   >
-                    Log in as bank
+                    Log in as banker
                   </Button>
                 </Stack>
               </Box>
@@ -286,14 +288,14 @@ function Login() {
           ) : null}
           <Text color="gray.600">
             Need an account?{' '}
-            <Button as={RouterLink} to="/register/personal" variant="link" colorScheme="teal">
-              Sign up as individual
+            <Button as={RouterLink} to="/register/customer" variant="link" colorScheme="teal">
+              Sign up as customer
             </Button>
           </Text>
           <Text color="gray.600">
-            Need bank signup?{' '}
-            <Button as={RouterLink} to="/register/bank" variant="link" colorScheme="orange">
-              Sign up as bank
+            Need a banker account?{' '}
+            <Button as={RouterLink} to="/register/banker" variant="link" colorScheme="orange">
+              Sign up as banker
             </Button>
           </Text>
         </Stack>

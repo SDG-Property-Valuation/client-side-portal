@@ -12,22 +12,32 @@ function PortalLayout() {
     '/': [],
     '/valuation': [
       { label: 'Home', to: '/', icon: FiHome },
-      { label: 'Personal Register', to: '/register/personal', icon: FiUser },
+      { label: 'Customer Register', to: '/register/customer', icon: FiUser },
     ],
     '/login': [
       { label: 'Home', to: '/', icon: FiHome },
       { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
-      { label: 'Bank Register', to: '/register/bank', icon: FiBriefcase },
+      { label: 'Banker Register', to: '/register/banker', icon: FiBriefcase },
     ],
     '/register/personal': [
       { label: 'Home', to: '/', icon: FiHome },
       { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
-      { label: 'Bank Register', to: '/register/bank', icon: FiBriefcase },
+      { label: 'Banker Register', to: '/register/banker', icon: FiBriefcase },
+    ],
+    '/register/customer': [
+      { label: 'Home', to: '/', icon: FiHome },
+      { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
+      { label: 'Banker Register', to: '/register/banker', icon: FiBriefcase },
     ],
     '/register/bank': [
       { label: 'Home', to: '/', icon: FiHome },
       { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
-      { label: 'Personal Register', to: '/register/personal', icon: FiUser },
+      { label: 'Customer Register', to: '/register/customer', icon: FiUser },
+    ],
+    '/register/banker': [
+      { label: 'Home', to: '/', icon: FiHome },
+      { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
+      { label: 'Customer Register', to: '/register/customer', icon: FiUser },
     ],
   }
 
@@ -145,12 +155,12 @@ function PortalLayout() {
                 </HStack>
                 <Button
                   as={RouterLink}
-                  to="/register/bank"
+                  to="/register/banker"
                   variant="ghost"
                   colorScheme="teal"
                   leftIcon={<FiBriefcase />}
                 >
-                  Bank signup
+                  Banker signup
                 </Button>
               </HStack>
             </Flex>

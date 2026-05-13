@@ -13,9 +13,9 @@ import { normalizeAuthRole, sanitizeAuthUser } from "./authUtils.js";
 
 const AUTH_STORAGE_KEY = "valuation-portal-auth";
 const AUTH_FAILURE_STATUS_CODES = new Set([401, 403]);
-const AUTH_API_BY_ROLE = {
-  client: API_ENDPOINTS.client.auth,
-  banker: API_ENDPOINTS.bank.auth,
+const AUTH_LOGOUT_API_BY_ROLE = {
+  client: API_ENDPOINTS.auth.logout.client,
+  banker: API_ENDPOINTS.auth.logout.banker,
 };
 
 const inferAuthRoleFromUrl = (url) => {
@@ -40,8 +40,7 @@ const shouldSkipAuthRetry = (config) => {
   const normalizedUrl = String(config?.url ?? "");
 
   return [
-    "/client-login",
-    "/banker-login",
+    "/api/v1/auth/login",
     "/refresh-auth",
     "/me",
     "/client-logout",
@@ -99,12 +98,12 @@ const getStoredAuthState = () => {
 const getAuthRoleCandidates = (...candidates) => {
   const normalizedRoles = [];
 
-  for (const candidate of [...candidates, ...Object.keys(AUTH_API_BY_ROLE)]) {
+  for (const candidate of [...candidates, ...Object.keys(AUTH_LOGOUT_API_BY_ROLE)]) {
     const normalizedRole = normalizeAuthRole(candidate);
 
     if (
       normalizedRole &&
-      AUTH_API_BY_ROLE[normalizedRole] &&
+      AUTH_LOGOUT_API_BY_ROLE[normalizedRole] &&
       !normalizedRoles.includes(normalizedRole)
     ) {
       normalizedRoles.push(normalizedRole);
@@ -177,31 +176,21 @@ export function AuthProvider({ children }) {
   );
 
   const getRoleSessionProfile = useCallback(async (role) => {
-    const sessionUrl = AUTH_API_BY_ROLE[role]?.session;
-
-    if (!sessionUrl) {
-      return null;
-    }
-
-    const response = await apiClient.get(sessionUrl, { withCredentials: true });
+    const response = await apiClient.get(API_ENDPOINTS.auth.session, {
+      withCredentials: true,
+    });
     const apiResponse = response?.data ?? {};
 
     if (!apiResponse.success || !apiResponse.data) {
       throw new Error(apiResponse.message || "Unable to fetch current session");
     }
 
-    return apiResponse.data;
+    return sanitizeAuthUser(apiResponse.data, role);
   }, []);
 
-  const refreshRoleAuth = useCallback(async (role) => {
-    const refreshUrl = AUTH_API_BY_ROLE[role]?.refresh;
-
-    if (!refreshUrl) {
-      return null;
-    }
-
+  const refreshRoleAuth = useCallback(async () => {
     const response = await apiClient.post(
-      refreshUrl,
+      API_ENDPOINTS.auth.refresh,
       {},
       { withCredentials: true },
     );
@@ -217,21 +206,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const refreshSessionToken = useCallback(
-    async (preferredRole = null) => {
-      const normalizedRole =
-        normalizeAuthRole(preferredRole) ||
-        normalizeAuthRole(authStateRef.current.authRole) ||
-        "client";
-
-      if (!AUTH_API_BY_ROLE[normalizedRole]?.refresh) {
-        throw new Error("Unable to refresh authentication");
-      }
-
+    async () => {
       if (refreshPromiseRef.current) {
         return refreshPromiseRef.current;
       }
 
-      const refreshPromise = refreshRoleAuth(normalizedRole);
+      const refreshPromise = refreshRoleAuth();
       refreshPromiseRef.current = refreshPromise;
 
       try {
@@ -277,10 +257,8 @@ export function AuthProvider({ children }) {
               const sessionUser = await getRoleSessionProfile(normalizedRole);
               setAuthenticatedSession(normalizedRole, sessionUser);
               return true;
-            } catch (refreshError) {
-              if (!isAuthFailure(refreshError)) {
-                return authStateRef.current.isAuthenticated;
-              }
+            } catch {
+              // Try any remaining role candidates. If none recover, auth is cleared below.
             }
           }
         }
@@ -328,7 +306,7 @@ export function AuthProvider({ children }) {
           inferAuthRoleFromUrl(originalRequest.url) ||
           normalizeAuthRole(authStateRef.current.authRole);
 
-        if (!requestRole || !AUTH_API_BY_ROLE[requestRole]?.refresh) {
+        if (!requestRole) {
           clearAuthenticatedSession();
           return Promise.reject(error);
         }
@@ -390,14 +368,14 @@ export function AuthProvider({ children }) {
       }
 
       setAuthenticatedSession(normalizedRole, sessionUser);
-      return true;
+      return revalidateSession(normalizedRole);
     },
-    [setAuthenticatedSession],
+    [revalidateSession, setAuthenticatedSession],
   );
 
   const logout = useCallback(async () => {
     const normalizedRole = normalizeAuthRole(authStateRef.current.authRole);
-    const logoutUrl = AUTH_API_BY_ROLE[normalizedRole]?.logout;
+    const logoutUrl = AUTH_LOGOUT_API_BY_ROLE[normalizedRole];
 
     try {
       if (logoutUrl) {

@@ -29,7 +29,7 @@ const formatRoleLabel = (authRole) => {
   }
 
   if (authRole === 'client') {
-    return 'Individual account'
+    return 'Customer account'
   }
 
   return 'Saved account'

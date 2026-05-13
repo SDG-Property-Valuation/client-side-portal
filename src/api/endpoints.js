@@ -1,23 +1,18 @@
 export const API_ENDPOINTS = {
-  client: {
-    register: '/api/v1/client/register-client',
-    login: '/api/v1/client/client-login',
-    requestValuation: '/api/v1/client/request-valuation',
-    requestedInspections: '/api/v1/client/get-requested-inspections',
-    cancelRequestedInspections: '/api/v1/client/cancel-requested-inspections',
-    auth: {
-      session: '/api/v1/client/me',
-      refresh: '/api/v1/client/refresh-auth',
-      logout: '/api/v1/client/client-logout',
+  auth: {
+    initializeSignup: '/api/v1/auth/initialize-signup',
+    verifySignup: '/api/v1/auth/verify-signup',
+    register: '/api/v1/auth/register',
+    login: '/api/v1/auth/login',
+    session: '/api/v1/auth/me',
+    refresh: '/api/v1/auth/refresh-auth',
+    logout: {
+      client: '/api/v1/client/client-logout',
+      banker: '/api/v1/bank/banker-logout',
     },
   },
-  bank: {
-    register: '/api/v1/bank/register-bank',
-    login: '/api/v1/bank/banker-login',
-    auth: {
-      session: '/api/v1/bank/me',
-      refresh: '/api/v1/bank/refresh-auth',
-      logout: '/api/v1/bank/banker-logout',
-    },
+  inspections: {
+    request: '/api/v1/inspections/request',
+    detail: '/api/v1/inspections',
   },
 }

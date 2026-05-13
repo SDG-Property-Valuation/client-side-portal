@@ -17,6 +17,7 @@ import {
   Stack,
   Text,
   Textarea,
+  useToast,
 } from '@chakra-ui/react'
 import apiClient from '../api/apiClient.js'
 import { API_ENDPOINTS } from '../api/endpoints.js'
@@ -26,6 +27,7 @@ import { FiCalendar, FiFileText, FiMail, FiMapPin, FiPhone, FiUser } from 'react
 import { Link as RouterLink } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider.jsx'
 import { resolveAuthRole } from '../auth/authUtils.js'
+import { PROPERTY_TYPE_OPTIONS, VALUATION_PURPOSE_OPTIONS } from '../constants/valuationOptions.js'
 
 const clientDefaultValues = {
   ownerName: '',
@@ -88,10 +90,18 @@ const supportingDocumentFields = [
   { name: 'titleSearchReportByAdvocate', label: 'Title Search Report by Advocate' },
   { name: 'totalLandMeasurement', label: 'Total Land Measurement' },
   { name: 'commencementCertificate', label: 'Commencement Certificate' },
+  { name: 'transferOrder', label: 'Transfer Order' },
+  { name: 'RERA_Certificate', label: 'RERA Certificate' },
+  { name: 'electricityBill', label: 'Electricity Bill' },
+  { name: 'work_Done_complicationPlan', label: 'Work Done complicationPlan' },
+  { name: 'others', label: 'Others' },
 ]
 
 const createOfflineDocumentSelection = () =>
   Object.fromEntries(supportingDocumentFields.map(({ name }) => [name, false]))
+
+const createDocumentInputResetKeys = () =>
+  Object.fromEntries(supportingDocumentFields.map(({ name }) => [name, 0]))
 
 const clientValidationFieldMap = {
   ownerName: 'ownerName',
@@ -118,6 +128,35 @@ const clientValidationFieldMap = {
   'propertyAddress.state': 'visitingState',
 }
 
+const bankValidationFieldMap = {
+  caseReference: 'caseReference',
+  borrowerName: 'borrowerName',
+  borrowerPhoneNumber: 'borrowerPhoneNumber',
+  borrowerEmail: 'borrowerEmail',
+  borrowerAddress: 'borrowerAddress',
+  propertyType: 'propertyType',
+  valuationPurpose: 'valuationPurpose',
+  requiredLoanAmount: 'requiredLoanAmount',
+  targetReportDate: 'targetReportDate',
+  targeReportDate: 'targetReportDate',
+  supportingDocumentsNotes: 'supportingDocumentsNotes',
+  supportingDocuments: 'supportingDocuments',
+  visitingAddress: 'visitingAddress',
+  propertyAddress: 'visitingAddress',
+  'visitingAddress.address': 'visitingAddress',
+  'visitingAddress.addressLine1': 'visitingAddress',
+  'visitingAddress.addressLine2': 'borrowerAddress',
+  'visitingAddress.pinCode': 'visitingPinCode',
+  'visitingAddress.city': 'visitingCity',
+  'visitingAddress.state': 'visitingState',
+  'propertyAddress.address': 'visitingAddress',
+  'propertyAddress.addressLine1': 'visitingAddress',
+  'propertyAddress.addressLine2': 'borrowerAddress',
+  'propertyAddress.pinCode': 'visitingPinCode',
+  'propertyAddress.city': 'visitingCity',
+  'propertyAddress.state': 'visitingState',
+}
+
 const clearFieldError = (setFieldErrors, field) => {
   setFieldErrors((previous) => {
     if (!previous[field]) {
@@ -135,6 +174,23 @@ const hasSelectedSupportingDocuments = (filesByField, offlineSelectionsByField) 
     const selectedFiles = filesByField[name]
     return (Array.isArray(selectedFiles) && selectedFiles.length > 0) || Boolean(offlineSelectionsByField[name])
   })
+
+const appendSupportingDocumentsToPayload = (payload, filesByField, offlineSelectionsByField) => {
+  supportingDocumentFields.forEach(({ name }) => {
+    const files = filesByField[name]
+
+    if (Array.isArray(files) && files.length) {
+      files.forEach((file) => {
+        payload.append(name, file)
+      })
+      return
+    }
+
+    if (offlineSelectionsByField[name]) {
+      payload.append(name, 'true')
+    }
+  })
+}
 
 const extractValidationErrors = (errorEntries, fieldMap) => {
   if (!Array.isArray(errorEntries)) {
@@ -164,7 +220,7 @@ const extractValidationErrors = (errorEntries, fieldMap) => {
 
 const SupportingDocumentsSection = ({
   filesByField,
-  inputResetKey,
+  inputResetKeys,
   offlineSelectionsByField,
   onFilesChange,
   onOfflineChange,
@@ -202,7 +258,7 @@ const SupportingDocumentsSection = ({
             <FormLabel fontSize="sm">{field.label}</FormLabel>
             <Stack spacing={2.5}>
               <Input
-                key={`${inputResetKey}-${field.name}`}
+                key={`${field.name}-${inputResetKeys[field.name] ?? 0}`}
                 type="file"
                 multiple
                 accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
@@ -241,6 +297,7 @@ const SupportingDocumentsSection = ({
 
 function NewEvaluation() {
   const { authRole, user } = useAuth()
+  const toast = useToast()
   const [clientFormData, setClientFormData] = useState(clientDefaultValues)
   const [bankFormData, setBankFormData] = useState(bankDefaultValues)
   const [clientFieldErrors, setClientFieldErrors] = useState({})
@@ -249,10 +306,10 @@ function NewEvaluation() {
   const [bankSupportingDocuments, setBankSupportingDocuments] = useState({})
   const [clientOfflineDocuments, setClientOfflineDocuments] = useState(createOfflineDocumentSelection)
   const [bankOfflineDocuments, setBankOfflineDocuments] = useState(createOfflineDocumentSelection)
-  const [clientDocumentInputResetKey, setClientDocumentInputResetKey] = useState(0)
-  const [bankDocumentInputResetKey, setBankDocumentInputResetKey] = useState(0)
+  const [clientDocumentInputResetKeys, setClientDocumentInputResetKeys] = useState(createDocumentInputResetKeys)
+  const [bankDocumentInputResetKeys, setBankDocumentInputResetKeys] = useState(createDocumentInputResetKeys)
   const [isClientSubmitting, setIsClientSubmitting] = useState(false)
-  const [submitMessage, setSubmitMessage] = useState({ type: '', text: '' })
+  const [isBankSubmitting, setIsBankSubmitting] = useState(false)
 
   const resolvedRole = useMemo(() => resolveAuthRole(user?.role, authRole), [authRole, user?.role])
 
@@ -266,6 +323,17 @@ function NewEvaluation() {
       'Share property details and track your request in reports and invoices.',
     banker:
       'Share borrower and property details for bank valuation processing.',
+  }
+
+  const showSubmissionToast = (status, description) => {
+    toast({
+      title: status === 'success' ? 'Success' : 'Request failed',
+      description,
+      status,
+      position: 'top-right',
+      duration: 4000,
+      isClosable: true,
+    })
   }
 
   const handleClientChange = (field) => (event) => {
@@ -326,7 +394,10 @@ function NewEvaluation() {
         ...previous,
         [field]: [],
       }))
-      setClientDocumentInputResetKey((previous) => previous + 1)
+      setClientDocumentInputResetKeys((previous) => ({
+        ...previous,
+        [field]: (previous[field] ?? 0) + 1,
+      }))
     }
   }
 
@@ -344,7 +415,10 @@ function NewEvaluation() {
         ...previous,
         [field]: [],
       }))
-      setBankDocumentInputResetKey((previous) => previous + 1)
+      setBankDocumentInputResetKeys((previous) => ({
+        ...previous,
+        [field]: (previous[field] ?? 0) + 1,
+      }))
     }
   }
 
@@ -354,7 +428,11 @@ function NewEvaluation() {
       Object.fromEntries(supportingDocumentFields.map(({ name }) => [name, true])),
     )
     setClientSupportingDocuments({})
-    setClientDocumentInputResetKey((previous) => previous + 1)
+    setClientDocumentInputResetKeys((previous) =>
+      Object.fromEntries(
+        supportingDocumentFields.map(({ name }) => [name, (previous[name] ?? 0) + 1]),
+      ),
+    )
   }
 
   const handleBankSelectAllOfflineDocuments = () => {
@@ -363,7 +441,11 @@ function NewEvaluation() {
       Object.fromEntries(supportingDocumentFields.map(({ name }) => [name, true])),
     )
     setBankSupportingDocuments({})
-    setBankDocumentInputResetKey((previous) => previous + 1)
+    setBankDocumentInputResetKeys((previous) =>
+      Object.fromEntries(
+        supportingDocumentFields.map(({ name }) => [name, (previous[name] ?? 0) + 1]),
+      ),
+    )
   }
 
   const handleClientSubmit = async (event) => {
@@ -377,7 +459,6 @@ function NewEvaluation() {
       clientOfflineDocuments,
     )
 
-    setSubmitMessage({ type: '', text: '' })
     setClientFieldErrors({})
 
     if (!hasSupportingDocuments) {
@@ -385,7 +466,7 @@ function NewEvaluation() {
         'Upload at least one supporting document or mark one for physical submission.'
 
       setClientFieldErrors({ supportingDocuments: message })
-      setSubmitMessage({ type: 'error', text: message })
+      showSubmissionToast('error', message)
       return
     }
 
@@ -425,25 +506,9 @@ function NewEvaluation() {
         payload.append('visitingAddress[state]', clientFormData.visitingState.trim())
       }
 
-      supportingDocumentFields.forEach(({ name }) => {
-        const files = clientSupportingDocuments[name]
+      appendSupportingDocumentsToPayload(payload, clientSupportingDocuments, clientOfflineDocuments)
 
-        if (!Array.isArray(files) || !files.length) {
-          return
-        }
-
-        files.forEach((file) => {
-          payload.append(name, file)
-        })
-      })
-
-      supportingDocumentFields.forEach(({ name }) => {
-        if (clientOfflineDocuments[name]) {
-          payload.append('offlineSupportingDocuments[]', name)
-        }
-      })
-
-      const response = await apiClient.post(API_ENDPOINTS.client.requestValuation, payload, {
+      const response = await apiClient.post(API_ENDPOINTS.inspections.request, payload, {
         withCredentials: true,
       })
 
@@ -453,15 +518,16 @@ function NewEvaluation() {
         throw new Error(apiResponse.message || 'Unable to submit request right now.')
       }
 
-      setSubmitMessage({
-        type: 'success',
-        text: apiResponse.message || 'Client valuation request submitted successfully.',
-      })
+      showSubmissionToast('success', apiResponse.message || 'Client valuation request submitted successfully.')
       setClientFormData(clientDefaultValues)
       setClientFieldErrors({})
       setClientSupportingDocuments({})
       setClientOfflineDocuments(createOfflineDocumentSelection())
-      setClientDocumentInputResetKey((previous) => previous + 1)
+      setClientDocumentInputResetKeys((previous) =>
+        Object.fromEntries(
+          supportingDocumentFields.map(({ name }) => [name, (previous[name] ?? 0) + 1]),
+        ),
+      )
     } catch (error) {
       const validationErrors = extractValidationErrors(
         error?.response?.data?.errors,
@@ -479,15 +545,17 @@ function NewEvaluation() {
         error.message ||
         'Unable to submit request right now.'
 
-      setSubmitMessage({ type: 'error', text: apiMessage })
+      showSubmissionToast('error', apiMessage)
     } finally {
       setIsClientSubmitting(false)
     }
   }
 
-  const handleBankSubmit = (event) => {
+  const handleBankSubmit = async (event) => {
     event.preventDefault()
 
+    const normalizedPhoneNumber = bankFormData.borrowerPhoneNumber.replace(/\D/g, '')
+    const normalizedPinCode = bankFormData.visitingPinCode.replace(/\D/g, '')
     const hasSupportingDocuments = hasSelectedSupportingDocuments(
       bankSupportingDocuments,
       bankOfflineDocuments,
@@ -500,16 +568,102 @@ function NewEvaluation() {
         'Upload at least one supporting document or mark one for physical submission.'
 
       setBankFieldErrors({ supportingDocuments: message })
-      setSubmitMessage({ type: 'error', text: message })
+      showSubmissionToast('error', message)
       return
     }
 
-    setSubmitMessage({ type: 'success', text: 'Bank valuation case submitted successfully.' })
-    setBankFormData(bankDefaultValues)
-    setBankFieldErrors({})
-    setBankSupportingDocuments({})
-    setBankOfflineDocuments(createOfflineDocumentSelection())
-    setBankDocumentInputResetKey((previous) => previous + 1)
+    setIsBankSubmitting(true)
+
+    try {
+      const payload = new FormData()
+
+      if (bankFormData.caseReference.trim()) {
+        payload.append('caseReference', bankFormData.caseReference.trim())
+      }
+
+      payload.append('borrowerName', bankFormData.borrowerName.trim())
+      payload.append('borrowerPhoneNumber', normalizedPhoneNumber)
+
+      if (bankFormData.borrowerEmail.trim()) {
+        payload.append('borrowerEmail', bankFormData.borrowerEmail.trim())
+      }
+
+      payload.append('propertyType', bankFormData.propertyType)
+      payload.append('valuationPurpose', bankFormData.valuationPurpose)
+
+      const isoTargetDate = getIsoReportDate(bankFormData.targetReportDate)
+      if (isoTargetDate) {
+        payload.append('targetReportDate', isoTargetDate)
+        payload.append('targeReportDate', isoTargetDate)
+      }
+
+      payload.append('visitingAddress[address]', bankFormData.visitingAddress.trim())
+
+      if (bankFormData.borrowerAddress.trim()) {
+        payload.append('borrowerAddress', bankFormData.borrowerAddress.trim())
+      }
+
+      if (normalizedPinCode) {
+        payload.append('visitingAddress[pinCode]', normalizedPinCode)
+      }
+
+      payload.append('visitingAddress[city]', bankFormData.visitingCity.trim())
+
+      if (bankFormData.visitingState.trim()) {
+        payload.append('visitingAddress[state]', bankFormData.visitingState.trim())
+      }
+
+      if (bankFormData.requiredLoanAmount !== '') {
+        payload.append('requiredLoanAmount', bankFormData.requiredLoanAmount)
+      }
+
+      if (bankFormData.supportingDocumentsNotes.trim()) {
+        payload.append('supportingDocumentsNotes', bankFormData.supportingDocumentsNotes.trim())
+      }
+
+      appendSupportingDocumentsToPayload(payload, bankSupportingDocuments, bankOfflineDocuments)
+
+      const response = await apiClient.post(API_ENDPOINTS.inspections.request, payload, {
+        withCredentials: true,
+      })
+
+      const apiResponse = response?.data ?? {}
+
+      if (!apiResponse.success) {
+        throw new Error(apiResponse.message || 'Unable to submit request right now.')
+      }
+
+      showSubmissionToast('success', apiResponse.message || 'Bank valuation case submitted successfully.')
+      setBankFormData(bankDefaultValues)
+      setBankFieldErrors({})
+      setBankSupportingDocuments({})
+      setBankOfflineDocuments(createOfflineDocumentSelection())
+      setBankDocumentInputResetKeys((previous) =>
+        Object.fromEntries(
+          supportingDocumentFields.map(({ name }) => [name, (previous[name] ?? 0) + 1]),
+        ),
+      )
+    } catch (error) {
+      const validationErrors = extractValidationErrors(
+        error?.response?.data?.errors,
+        bankValidationFieldMap,
+      )
+
+      if (Object.keys(validationErrors).length) {
+        setBankFieldErrors(validationErrors)
+      }
+
+      const apiMessage =
+        Object.values(validationErrors)[0] ||
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error.message ||
+        'Unable to submit request right now.'
+
+      showSubmissionToast('error', apiMessage)
+    } finally {
+      setIsBankSubmitting(false)
+    }
   }
 
   return (
@@ -531,17 +685,10 @@ function NewEvaluation() {
         p={{ base: 6, md: 8 }}
         boxShadow="0 20px 50px rgba(18, 54, 53, 0.14)"
       >
-        {submitMessage.text ? (
-          <Alert status={submitMessage.type === 'success' ? 'success' : 'error'} borderRadius="md" mb={6}>
-            <AlertIcon />
-            {submitMessage.text}
-          </Alert>
-        ) : null}
-
         {resolvedRole === 'client' ? (
           <Box as="form" onSubmit={handleClientSubmit}>
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-              <FormControl isRequired>
+              <FormControl isRequired isInvalid={Boolean(clientFieldErrors.ownerName)}>
                 <FormLabel>Customer / Borrower name</FormLabel>
                 <InputGroup>
                   <InputLeftElement pointerEvents="none">
@@ -554,9 +701,10 @@ function NewEvaluation() {
                     required
                   />
                 </InputGroup>
+                <FormErrorMessage>{clientFieldErrors.ownerName}</FormErrorMessage>
               </FormControl>
 
-              <FormControl isRequired>
+              <FormControl isRequired isInvalid={Boolean(clientFieldErrors.ownerPhoneNumber)}>
                 <FormLabel>Customer / Borrower phone number</FormLabel>
                 <InputGroup>
                   <InputLeftElement pointerEvents="none">
@@ -572,9 +720,10 @@ function NewEvaluation() {
                     required
                   />
                 </InputGroup>
+                <FormErrorMessage>{clientFieldErrors.ownerPhoneNumber}</FormErrorMessage>
               </FormControl>
 
-              <FormControl>
+              <FormControl isInvalid={Boolean(clientFieldErrors.ownerEmail)}>
                 <FormLabel>Email ID</FormLabel>
                 <InputGroup>
                   <InputLeftElement pointerEvents="none">
@@ -587,6 +736,7 @@ function NewEvaluation() {
                     onChange={handleClientChange('ownerEmail')}
                   />
                 </InputGroup>
+                <FormErrorMessage>{clientFieldErrors.ownerEmail}</FormErrorMessage>
               </FormControl>
 
               <FormControl isRequired isInvalid={Boolean(clientFieldErrors.visitingAddress)}>
@@ -662,10 +812,11 @@ function NewEvaluation() {
                   onChange={handleClientChange('propertyType')}
                   required
                 >
-                  <option value="Residential">Residential</option>
-                  <option value="Commercial">Commercial</option>
-                  <option value="Land">Land</option>
-                  <option value="Industrial">Industrial</option>
+                  {PROPERTY_TYPE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
                 </Select>
                 <FormErrorMessage>{clientFieldErrors.propertyType}</FormErrorMessage>
               </FormControl>
@@ -678,10 +829,11 @@ function NewEvaluation() {
                   onChange={handleClientChange('valuationPurpose')}
                   required
                 >
-                  <option value="Sale or purchase">Sale or purchase</option>
-                  <option value="Loan approval">Loan approval</option>
-                  <option value="Insurance coverage">Insurance coverage</option>
-                  <option value="Legal matters">Legal matters</option>
+                  {VALUATION_PURPOSE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
                 </Select>
                 <FormErrorMessage>{clientFieldErrors.valuationPurpose}</FormErrorMessage>
               </FormControl>
@@ -715,7 +867,7 @@ function NewEvaluation() {
 
             <SupportingDocumentsSection
               filesByField={clientSupportingDocuments}
-              inputResetKey={`client-${clientDocumentInputResetKey}`}
+              inputResetKeys={clientDocumentInputResetKeys}
               offlineSelectionsByField={clientOfflineDocuments}
               onFilesChange={handleClientSupportingDocumentChange}
               onOfflineChange={handleClientOfflineDocumentChange}
@@ -780,9 +932,10 @@ function NewEvaluation() {
                     onChange={handleBankChange('borrowerEmail')}
                   />
                 </InputGroup>
+                <FormErrorMessage>{bankFieldErrors.borrowerEmail}</FormErrorMessage>
               </FormControl>
 
-              <FormControl isRequired>
+              <FormControl isRequired isInvalid={Boolean(bankFieldErrors.borrowerPhoneNumber)}>
                 <FormLabel>Customer / Borrower phone number</FormLabel>
                 <InputGroup>
                   <InputLeftElement pointerEvents="none">
@@ -797,9 +950,10 @@ function NewEvaluation() {
                     required
                   />
                 </InputGroup>
+                <FormErrorMessage>{bankFieldErrors.borrowerPhoneNumber}</FormErrorMessage>
               </FormControl>
 
-              <FormControl isRequired>
+              <FormControl isRequired isInvalid={Boolean(bankFieldErrors.visitingAddress)}>
                 <FormLabel>Property visit address</FormLabel>
                 <InputGroup>
                   <InputLeftElement pointerEvents="none">
@@ -813,18 +967,20 @@ function NewEvaluation() {
                     required
                   />
                 </InputGroup>
+                <FormErrorMessage>{bankFieldErrors.visitingAddress}</FormErrorMessage>
               </FormControl>
 
-              <FormControl>
+              <FormControl isInvalid={Boolean(bankFieldErrors.borrowerAddress)}>
                 <FormLabel>Customer / Borrower address</FormLabel>
                 <Input
                   placeholder="Customer or borrower address"
                   value={bankFormData.borrowerAddress}
                   onChange={handleBankChange('borrowerAddress')}
                 />
+                <FormErrorMessage>{bankFieldErrors.borrowerAddress}</FormErrorMessage>
               </FormControl>
 
-              <FormControl>
+              <FormControl isInvalid={Boolean(bankFieldErrors.visitingPinCode)}>
                 <FormLabel>Pincode</FormLabel>
                 <Input
                   inputMode="numeric"
@@ -832,9 +988,10 @@ function NewEvaluation() {
                   value={bankFormData.visitingPinCode}
                   onChange={handleBankChange('visitingPinCode')}
                 />
+                <FormErrorMessage>{bankFieldErrors.visitingPinCode}</FormErrorMessage>
               </FormControl>
 
-              <FormControl isRequired>
+              <FormControl isRequired isInvalid={Boolean(bankFieldErrors.visitingCity)}>
                 <FormLabel>City</FormLabel>
                 <Select
                   name="visitingAddress.city"
@@ -849,18 +1006,20 @@ function NewEvaluation() {
                     </option>
                   ))}
                 </Select>
+                <FormErrorMessage>{bankFieldErrors.visitingCity}</FormErrorMessage>
               </FormControl>
 
-              <FormControl>
+              <FormControl isInvalid={Boolean(bankFieldErrors.visitingState)}>
                 <FormLabel>State</FormLabel>
                 <Input
                   placeholder="State"
                   value={bankFormData.visitingState}
                   onChange={handleBankChange('visitingState')}
                 />
+                <FormErrorMessage>{bankFieldErrors.visitingState}</FormErrorMessage>
               </FormControl>
 
-              <FormControl isRequired>
+              <FormControl isRequired isInvalid={Boolean(bankFieldErrors.propertyType)}>
                 <FormLabel>Property type</FormLabel>
                 <Select
                   placeholder="Choose property type"
@@ -868,14 +1027,16 @@ function NewEvaluation() {
                   onChange={handleBankChange('propertyType')}
                   required
                 >
-                  <option value="residential">Residential</option>
-                  <option value="commercial">Commercial</option>
-                  <option value="land">Land</option>
-                  <option value="industrial">Industrial</option>
+                  {PROPERTY_TYPE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
                 </Select>
+                <FormErrorMessage>{bankFieldErrors.propertyType}</FormErrorMessage>
               </FormControl>
 
-              <FormControl isRequired>
+              <FormControl isRequired isInvalid={Boolean(bankFieldErrors.valuationPurpose)}>
                 <FormLabel>Valuation purpose</FormLabel>
                 <Select
                   placeholder="Choose reason"
@@ -883,14 +1044,16 @@ function NewEvaluation() {
                   onChange={handleBankChange('valuationPurpose')}
                   required
                 >
-                  <option value="loan-sanction">Loan sanction</option>
-                  <option value="mortgage-renewal">Mortgage renewal</option>
-                  <option value="legal-review">Legal review</option>
-                  <option value="portfolio-update">Portfolio update</option>
+                  {VALUATION_PURPOSE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
                 </Select>
+                <FormErrorMessage>{bankFieldErrors.valuationPurpose}</FormErrorMessage>
               </FormControl>
 
-              <FormControl>
+              <FormControl isInvalid={Boolean(bankFieldErrors.requiredLoanAmount)}>
                 <FormLabel>Required loan amount (INR)</FormLabel>
                 <InputGroup>
                   <InputLeftElement pointerEvents="none">
@@ -904,9 +1067,10 @@ function NewEvaluation() {
                     onChange={handleBankChange('requiredLoanAmount')}
                   />
                 </InputGroup>
+                <FormErrorMessage>{bankFieldErrors.requiredLoanAmount}</FormErrorMessage>
               </FormControl>
 
-              <FormControl isRequired>
+              <FormControl isRequired isInvalid={Boolean(bankFieldErrors.targetReportDate)}>
                 <FormLabel>Target report date</FormLabel>
                 <InputGroup>
                   <InputLeftElement pointerEvents="none">
@@ -919,10 +1083,11 @@ function NewEvaluation() {
                     required
                   />
                 </InputGroup>
+                <FormErrorMessage>{bankFieldErrors.targetReportDate}</FormErrorMessage>
               </FormControl>
             </SimpleGrid>
 
-            <FormControl mt={6} isRequired>
+            <FormControl mt={6} isRequired isInvalid={Boolean(bankFieldErrors.supportingDocumentsNotes)}>
               <FormLabel>Supporting documents and notes</FormLabel>
               <Textarea
                 placeholder="Add borrower documents, urgency, or branch notes"
@@ -930,11 +1095,12 @@ function NewEvaluation() {
                 onChange={handleBankChange('supportingDocumentsNotes')}
                 required
               />
+              <FormErrorMessage>{bankFieldErrors.supportingDocumentsNotes}</FormErrorMessage>
             </FormControl>
 
             <SupportingDocumentsSection
               filesByField={bankSupportingDocuments}
-              inputResetKey={`bank-${bankDocumentInputResetKey}`}
+              inputResetKeys={bankDocumentInputResetKeys}
               offlineSelectionsByField={bankOfflineDocuments}
               onFilesChange={handleBankSupportingDocumentChange}
               onOfflineChange={handleBankOfflineDocumentChange}
@@ -944,7 +1110,7 @@ function NewEvaluation() {
             />
 
             <Stack spacing={4} mt={6}>
-              <Button colorScheme="orange" size="lg" type="submit">
+              <Button colorScheme="orange" size="lg" type="submit" isLoading={isBankSubmitting}>
                 Submit request
               </Button>
               <Button as={RouterLink} to="/workspace/reports" variant="link" colorScheme="teal">

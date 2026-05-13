@@ -49,7 +49,7 @@ const formatRoleLabel = (role) => {
   const normalizedRole = normalizeAuthRole(role)
 
   if (normalizedRole === 'client') {
-    return 'Client'
+    return 'Customer'
   }
 
   if (normalizedRole === 'banker') {

@@ -50,7 +50,9 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register/personal" element={<PersonalRegister />} />
+          <Route path="/register/customer" element={<PersonalRegister />} />
           <Route path="/register/bank" element={<BankRegister />} />
+          <Route path="/register/banker" element={<BankRegister />} />
           <Route path="/valuation" element={<DirectValuation />} />
           <Route path="/reports" element={<LegacyReportRedirect />} />
           <Route path="/reports/:reportId" element={<LegacyReportRedirect />} />
