@@ -180,7 +180,7 @@ function Login() {
       >
         <Tabs variant="soft-rounded" colorScheme="teal" isFitted>
           <TabList>
-            <Tab>Customer</Tab>
+            <Tab>Individual</Tab>
             <Tab>Banker</Tab>
           </TabList>
           <TabPanels>
@@ -226,7 +226,7 @@ function Login() {
                     type="submit"
                     isLoading={personalForm.formState.isSubmitting}
                   >
-                    Log in as customer
+                    Log in as individual
                   </Button>
                 </Stack>
               </Box>
@@ -288,8 +288,8 @@ function Login() {
           ) : null}
           <Text color="gray.600">
             Need an account?{' '}
-            <Button as={RouterLink} to="/register/customer" variant="link" colorScheme="teal">
-              Sign up as customer
+            <Button as={RouterLink} to="/register/individual" variant="link" colorScheme="teal">
+              Sign up as individual
             </Button>
           </Text>
           <Text color="gray.600">

@@ -60,7 +60,7 @@ const bankerRegistrationSchema = yup
   })
   .required()
 
-const customerRegistrationSchema = yup
+const individualRegistrationSchema = yup
   .object({
     ...commonRegistrationFields,
     relationshipToProperty: yup
@@ -84,7 +84,7 @@ const registrationDefaultValuesByRole = {
     institutionName: '',
     designation: '',
   },
-  client: {
+  individual: {
     fullname: '',
     password: '',
     phoneNumber: '',
@@ -97,12 +97,12 @@ const registrationDefaultValuesByRole = {
 
 const registrationSchemaByRole = {
   banker: bankerRegistrationSchema,
-  client: customerRegistrationSchema,
+  individual: individualRegistrationSchema,
 }
 
 const registrationButtonLabelByRole = {
   banker: 'Create banker account',
-  client: 'Create customer account',
+  individual: 'Create individual account',
 }
 
 const formatApiMessage = (error, fallbackMessage) =>

@@ -40,12 +40,12 @@ function Landing() {
         ]
       : []),
     {
-      title: 'Register as Customer',
+      title: 'Register as Individual',
       description: 'Owners, buyers, brokers, and agents can create an account in minutes.',
-      to: '/register/customer',
+      to: '/register/individual',
       icon: FiUser,
       color: 'teal',
-      action: 'Customer signup',
+      action: 'Individual signup',
     },
     {
       title: 'Register as Banker',
@@ -69,7 +69,7 @@ function Landing() {
     {
       label: 'Avg signup time',
       value: '2 mins',
-      help: 'Signup for customer or banker',
+      help: 'Signup for individual or banker',
     },
     {
       label: 'Turnaround goal',
@@ -101,7 +101,7 @@ function Landing() {
             Register, log in, and share property details in one place.
           </Heading>
           <Text fontSize="lg" color="gray.700">
-            This portal helps customers and bankers share property details and request valuations quickly.
+            This portal helps individuals and bankers share property details and request valuations quickly.
           </Text>
           <SimpleGrid columns={{ base: 1, sm: 3 }} spacing={4}>
             {stats.map((stat) => (
@@ -182,7 +182,7 @@ function Landing() {
               1. Choose a path
             </Text>
             <Text color="gray.600">
-              Sign up as a customer, sign up as a banker, or start direct valuation.
+              Sign up as an individual, sign up as a banker, or start direct valuation.
             </Text>
           </Box>
           <Box>

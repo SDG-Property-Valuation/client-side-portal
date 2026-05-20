@@ -12,7 +12,7 @@ function PortalLayout() {
     '/': [],
     '/valuation': [
       { label: 'Home', to: '/', icon: FiHome },
-      { label: 'Customer Register', to: '/register/customer', icon: FiUser },
+      { label: 'Individual Register', to: '/register/individual', icon: FiUser },
     ],
     '/login': [
       { label: 'Home', to: '/', icon: FiHome },
@@ -20,6 +20,11 @@ function PortalLayout() {
       { label: 'Banker Register', to: '/register/banker', icon: FiBriefcase },
     ],
     '/register/personal': [
+      { label: 'Home', to: '/', icon: FiHome },
+      { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
+      { label: 'Banker Register', to: '/register/banker', icon: FiBriefcase },
+    ],
+    '/register/individual': [
       { label: 'Home', to: '/', icon: FiHome },
       { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
       { label: 'Banker Register', to: '/register/banker', icon: FiBriefcase },
@@ -32,12 +37,12 @@ function PortalLayout() {
     '/register/bank': [
       { label: 'Home', to: '/', icon: FiHome },
       { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
-      { label: 'Customer Register', to: '/register/customer', icon: FiUser },
+      { label: 'Individual Register', to: '/register/individual', icon: FiUser },
     ],
     '/register/banker': [
       { label: 'Home', to: '/', icon: FiHome },
       { label: 'Direct Valuation', to: '/valuation', icon: FiFileText },
-      { label: 'Customer Register', to: '/register/customer', icon: FiUser },
+      { label: 'Individual Register', to: '/register/individual', icon: FiUser },
     ],
   }
 

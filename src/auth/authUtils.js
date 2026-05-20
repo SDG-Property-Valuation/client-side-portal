@@ -11,6 +11,7 @@ export const normalizeAuthRole = (role) => {
   if (
     normalizedRole.startsWith('client') ||
     normalizedRole.startsWith('customer') ||
+    normalizedRole.startsWith('individual') ||
     normalizedRole === 'personal'
   ) {
     return 'client'
