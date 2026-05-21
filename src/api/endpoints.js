@@ -2,6 +2,10 @@ export const API_ENDPOINTS = {
   auth: {
     initializeSignup: '/api/v1/auth/initialize-signup',
     verifySignup: '/api/v1/auth/verify-signup',
+    forgotPasswordSendOtp: '/api/v1/auth/forgot-password/send-otp',
+    forgotPasswordVerifyOtp: '/api/v1/auth/forgot-password/verify-otp',
+    forgotPasswordResetPassword: '/api/v1/auth/forgot-password/reset-password',
+    forgotPasswordResendOtp: '/api/v1/auth/forgot-password/resend-otp',
     register: '/api/v1/auth/register',
     login: '/api/v1/auth/login',
     session: '/api/v1/auth/me',
